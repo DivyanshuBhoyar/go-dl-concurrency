@@ -20,16 +20,26 @@ type Download struct {
 
 func main() {
 	startTime := time.Now()
+	var link string
+	var target string
+
+	fmt.Println("Enter the link to download:")
+	fmt.Scanf("%s\n", &link)
+
+	fmt.Println("Enter the target")
+	fmt.Scanf("%s\n", &target)
+
+
 	d := Download{
 		// Provide the URL to download,
 		//	example: https://www.dropbox.com/s/lgvhj/sample.mp4?dl=1
-		Url: "",
+		Url: link,
 		// Provide the target file path with extension, example: sample.mp4
-		TargetPath: "",
+		TargetPath: target,
 		// Number of sections/connections to make to the server
 		TotalSections: 10,
 	}
-	err := d.Do()
+	err := d.Do()  // function to manage downloading
 	if err != nil {
 		log.Printf("An error occured while downloading the file: %s\n", err)
 	}
@@ -39,11 +49,13 @@ func main() {
 // Start the download
 func (d Download) Do() error {
 	fmt.Println("Checking URL")
+
+	// create a new request HEAD to check if the URL is valid
 	r, err := d.getNewRequest("HEAD")
 	if err != nil {
 		return err
 	}
-	resp, err := http.DefaultClient.Do(r)
+	resp, err := http.DefaultClient.Do(r)  // execute the request
 	if err != nil {
 		return err
 	}
@@ -59,11 +71,11 @@ func (d Download) Do() error {
 	}
 	fmt.Printf("Size is %v bytes\n", size)
 
+	// create a slice of slices to store the start and end of each section
 	var sections = make([][2]int, d.TotalSections)
 	eachSize := size / d.TotalSections
 	fmt.Printf("Each size is %v bytes\n", eachSize)
 
-	// example: if file size is 100 bytes, our section should like:
 	// [[0 10] [11 21] [22 32] [33 43] [44 54] [55 65] [66 76] [77 87] [88 98] [99 99]]
 	for i := range sections {
 		if i == 0 {
@@ -82,8 +94,9 @@ func (d Download) Do() error {
 			sections[i][1] = size - 1
 		}
 	}
-
 	log.Println(sections)
+	// creation logic ends
+
 	var wg sync.WaitGroup
 	// download each section concurrently
 	for i, s := range sections {
@@ -107,7 +120,7 @@ func (d Download) downloadSection(i int, c [2]int) error {
 	if err != nil {
 		return err
 	}
-	r.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", c[0], c[1]))
+	r.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", c[0], c[1])) // set header to let server know we want a range
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
 		return err
@@ -116,11 +129,12 @@ func (d Download) downloadSection(i int, c [2]int) error {
 		return errors.New(fmt.Sprintf("Can't process, response is %v", resp.StatusCode))
 	}
 	fmt.Printf("Downloaded %v bytes for section %v\n", resp.Header.Get("Content-Length"), i)
+
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("section-%v.tmp", i), b, os.ModePerm)
+	err = ioutil.WriteFile(fmt.Sprintf("section-%v.tmp", i), b, os.ModePerm)  // write a section to temp file
 	if err != nil {
 		return err
 	}
