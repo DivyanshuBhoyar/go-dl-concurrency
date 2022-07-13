@@ -24,4 +24,9 @@ Start
   go run main.go
 ```
 
+
 ## Screenshots
+![Start](https://i.ibb.co/LppRRgN/Screenshot-from-2022-07-13-10-10-05.png)
+
+Splits parallel and merges at the end
+![App Screenshot](https://i.ibb.co/QnNRvqr/Screenshot-from-2022-07-13-10-11-32.png)
